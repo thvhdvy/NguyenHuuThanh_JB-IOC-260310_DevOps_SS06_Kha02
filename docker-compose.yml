@@ -1,0 +1,33 @@
+services:
+  core-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_DB=banking_db
+    ports:
+      - "5432:5432"
+    networks:
+      - banking-networks
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  account-service:
+    build: ./banking-app
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://core-db:5432/banking_db
+    ports:
+      - "8080:8080"
+    depends_on:
+      core-db:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - banking-networks
+
+networks:
+  banking-networks:
+    driver: bridge
